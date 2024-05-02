@@ -1,0 +1,67 @@
+# Script to stop OptimumDesk and UpdaterService processes and remove associated files
+# Designed by Kevin Gonzalez Vazquez
+
+# Check if ODService is running
+$OptimumDeskService = Get-Service -Name ODService
+
+# If ODService is running, stop it
+if ($OptimumDeskService.Status -eq "Running") {
+    Stop-Service -Name ODService
+    # Remove the service
+    sc delete ODService
+}
+
+# Check if UpdaterService exists
+$UpdaterServiceName = "UpdaterService"
+$UpdaterService = Get-Service -Name $UpdaterServiceName -ErrorAction SilentlyContinue
+
+# If service exists, stop it
+if ($UpdaterService -ne $null) {
+    # Check if service is running
+    if ($UpdaterService.Status -eq "Running") {
+        # Stop service
+        Stop-Service -Name $UpdaterServiceName
+        # Remove the service
+        sc delete $UpdaterServiceName
+    }
+}
+
+# Stop OptimumDesk and ODService tasks in task manager
+
+# Check if OptimumDesk task exists
+$OptimumDeskTaskName = "OptimumDesk"
+$OptimumDeskTaskExists = Get-ScheduledTask | Where-Object { $_.TaskName -eq $OptimumDeskTaskName }
+
+# If task exists, force stop it
+if ($OptimumDeskTaskExists) {
+    Stop-ScheduledTask -TaskName $OptimumDeskTaskName -Force
+}
+
+# Stop ODService process
+$OptimumDeskProcesses = Get-Process | Where-Object { $_.Name -eq "ODService" }
+
+if ($OptimumDeskProcesses -ne $null) {
+    foreach ($process in $OptimumDeskProcesses) {
+        Stop-Process -Id $process.Id
+    }
+}
+
+# Delete OptimumDesk folder in program files (x86)
+
+# Path to OptimumDesk executable
+$OptimumDeskExecutablePath = 'C:\Program Files (x86)\OptimumDesk\OptimumDesk.exe'
+
+# Check if the executable exists and remove it
+if (Test-Path $OptimumDeskExecutablePath) {
+    Remove-Item -Path $OptimumDeskExecutablePath -Force
+}
+
+# Delete Updater folder in program files (x86)\common files
+
+# Path to UpdaterService executable
+$UpdaterExecutablePath = "C:\Program Files (x86)\Common Files\Updater\updateservice.exe"
+
+# Check if the file exists and remove it
+if (Test-Path $UpdaterExecutablePath) {
+    Remove-Item -Path $UpdaterExecutablePath -Force
+}
